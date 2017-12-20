@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "srcVersionName": "v1_171101",
+      "destVersionName": "v2_171102",
+      "downUrl": "http://xxxxxx/xxxxxx.zip",
+      "downSize": "5234153",
+      "md5": "F3347B5F585D5AEF4C971B76BC759FA1"
+    },
+    {
+      "srcVersionName": "v1_171101",
+      "destVersionName": "v3_171103",
+      "downUrl": "http://xxxxxx/xxxxxx.zip",
+      "downSize": "4324533",
+      "md5": "B447A9EF3BB2B13D5B2F8D412344A5F6"
+    },
+    {
+      "srcVersionName": "v2_171102",
+      "destVersionName": "v3_171103",
+      "downUrl": "http://xxxxxx/xxxxxx.zip",
+      "downSize": "2523423",
+      "md5": "5EE2D47D6817AB77F45AA677EE9F4149"
+    }
+  ]
+}
