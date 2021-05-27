@@ -1,2 +1,3 @@
 rootProject.name = 'practice_kotlin'
+include 'model'
 

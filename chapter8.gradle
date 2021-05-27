@@ -1,0 +1,13 @@
+import com.raiseyang.plugins.tasks.SayHelloRobot
+import com.raiseyang.plugins.tasks.SayHelloRobotJava
+
+// 使用java语言编写的task
+tasks.register("testSayHelloJava", SayHelloRobotJava) {
+    msg = "SayHelloJava"
+}
+// 使用kt语言编写的task
+tasks.register("testSayHelloGroovy", SayHelloRobot) {
+    msg = "SayHelloGroovy"
+}
+
+apply plugin: com.raiseyang.plugins.tasks.SayHelloPlugin

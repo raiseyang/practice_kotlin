@@ -1,0 +1,19 @@
+
+//定义配置
+configurations {
+    cargo{
+        description "This is a Cargo Ant configure"
+        visible false
+    }
+}
+
+// 使用定义的配置
+dependencies {
+    // 使用自定义配置cargo来配置依赖，项目中不能使用okhttp api???
+    cargo("com.squareup.okhttp3:okhttp:4.9.0")
+//    implementation("com.squareup.okhttp3:okhttp:4.9.0")
+}
+
+//task okhttpTest5{
+//    def okhttp = new Okio
+//}

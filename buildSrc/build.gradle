@@ -1,0 +1,12 @@
+// 支持kotlin编写插件
+//plugins {
+//    id 'org.jetbrains.kotlin.jvm'
+//    id 'application'
+//}
+repositories {
+    mavenCentral()
+}
+dependencies {
+//    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.10"
+    implementation "com.squareup.okhttp3:okhttp:4.9.0"
+}

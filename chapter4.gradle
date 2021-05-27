@@ -1,0 +1,231 @@
+//gradle tasks 查看所有任务
+
+//===============================================================================
+//为task添加action
+task printVersion {
+    // 给任务加上分组信息
+    group = "version tasks"
+    description = "use for print version"
+    doLast {
+        println "project version=" + version
+    }
+}
+printVersion.doLast {
+    //使用gradle日志系统打印日志
+    logger.quiet("version=$version")
+}
+
+// task依赖的执行顺序::dependsOn
+task first {
+    doLast {
+        println 'first'
+    }
+}
+task second {
+    doLast {
+
+        println 'second'
+    }
+}
+task third {
+    doLast {
+        println 'third'
+    }
+}
+task printVersion2(dependsOn: [second, first]) {
+    doLast {
+        logger.quiet("version=$version")
+    }
+}
+third.dependsOn('printVersion2')
+//执行结果
+//first
+//second
+//version=1.0.0
+//third
+// 其中first second任务的执行顺序是gradle自己决定的，我们不应该关注它；
+
+//task结束后执行：finalizedBy
+task first3 {
+    doLast {
+        println 'first3'
+    }
+}
+task second3 {
+    doLast {
+        println 'second3'
+    }
+}
+
+first3.finalizedBy(second3)
+//执行结果
+//first3
+//second3
+
+//task配置::读取版本号
+class ProjectVersion {
+    Integer major
+    Integer minor
+    Boolean release
+
+    ProjectVersion(Integer major, Integer minor, Boolean release) {
+        this.major = major
+        this.minor = minor
+        this.release = release
+    }
+
+    @Override
+    String toString() {
+        return "$major.$minor" + (release ? '' : "-snapshot")
+    }
+}
+
+
+ext.versionFile = file('version.properties')
+
+task loadVersion {
+    // 没写doLast等action,默认就是配置阶段执行
+    project.version = readVersion()
+}
+
+ProjectVersion readVersion() {
+    Properties versionProperties = new Properties()
+    versionFile.withInputStream { stream ->
+        versionProperties.load(stream)
+    }
+    return new ProjectVersion(versionProperties.major.toInteger(),
+            versionProperties.minor.toInteger(),
+            versionProperties.release.toBoolean()
+    )
+}
+
+//控制输入输出，让gradle缓存任务执行结果
+task makeReleaseVersion {
+    inputs.property('release', version.release)
+    outputs.file(versionFile)
+    doLast {
+        version.release = this
+        ant.propertyfile(file: versionFile) {
+            entry(key: 'release', type: 'string', operation: '=', value: 'true')
+        }
+    }
+}
+
+//自定义task类，增强task
+class ReleaseVersionTask extends DefaultTask {
+    // 通过注解声明输入输出
+    @Input
+    Boolean release
+    @OutputFile
+    File destFile
+
+    ReleaseVersionTask() {
+        group = 'version reading'
+        description = 'xxx'
+    }
+
+    // 通过注解声明action
+    @TaskAction
+    void start() {
+        project.version.release = this
+        ant.propertyfile(file: destFile) {
+            entry(key: 'release', type: 'string', operation: '=', value: 'true')
+        }
+    }
+}
+
+task makeReleaseVersion2(type: ReleaseVersionTask) {
+    // 设置增强task的输入和输出 来调用
+    release = true
+    destFile = project.ext.versionFile
+}
+
+// 使用内置task类型::Zip,Copy
+task zipOneFile(type: Zip) {
+    from 'version.properties'
+    from jar.outputs.files
+//    archiveFileName = "${new Date().getTime()}.zip"
+}
+
+task copyOneFile(type: Copy) {
+    from zipOneFile.outputs.files
+    into "$buildDir/backup"
+}
+task publish(dependsOn: copyOneFile) {
+    doLast {
+        logger.quiet("publish one file")
+    }
+}
+
+// 添加task rules
+// 执行:gradle incrementMinorVersion
+tasks.addRule("Pattern: increment<classifier>version: increment xxx version -- ") { String taskName ->
+    if (taskName.startsWith("increment") && taskName.endsWith("Version")){
+        task(taskName){
+            doLast {
+                String classifier = taskName - 'increment' - 'Version'
+                String curVersion = version.toString()
+
+                switch (classifier){
+                    case "Major":
+                        ++version.major
+                        break
+                    case "Minor":
+                        ++version.minor
+                        break
+                }
+                String newVersion = version.toString()
+                logger.quiet("oldVersion=$curVersion,newVersion=$newVersion")
+                ant.propertyfile(file: versionFile) {
+                    entry(key: classifier.toLowerCase(), type: 'int', operation: '+', value: 1)
+                }
+            }
+        }
+    }
+}
+
+// 清单4.13:hook task执行过程
+task publish2 {
+    doLast {
+        logger.quiet("publish one file")
+    }
+}
+
+gradle.taskGraph.whenReady { TaskExecutionGraph taskGraph->
+    if (taskGraph.hasTask(publish2)){
+        project.version.release = this
+        ant.propertyfile(file: versionFile) {
+            entry(key: 'release', type: 'string', operation: '=', value: 'true')
+        }
+    }
+}
+
+// 清单4.14:通过监听器，修改版本
+task publish3 {
+    doLast {
+        logger.quiet("publish one file")
+    }
+}
+// 定义监听器
+class ReleaseVersionListener implements TaskExecutionGraphListener{
+    static final String releaseTaskPath = ":publish3"
+    @Override
+    void graphPopulated(TaskExecutionGraph graph) {
+        if (graph.hasTask(releaseTaskPath)){
+            // 过滤出目标task
+            Task releaseTask = graph.allTasks.find{it.path == releaseTaskPath}
+            // 找出project
+            Project project = releaseTask.project
+
+            if (!project.version.release){
+                project.version.release = this
+                project.ant.propertyfile(file: project.versionFile) {
+                    entry(key: 'release', type: 'string', operation: '=', value: 'true')
+                }
+            }
+        }
+    }
+}
+// 注册监听器
+def releaseTaskListener = new ReleaseVersionListener()
+gradle.taskGraph.addTaskExecutionGraphListener(releaseTaskListener)
