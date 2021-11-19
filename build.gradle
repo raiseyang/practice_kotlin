@@ -2,7 +2,7 @@ group 'com.raise'
 version '1.0.0'
 
 buildscript {
-    ext.kotlin_version = '1.4.31'
+    ext.kotlin_version = '1.6.0'
 
     repositories {
         mavenCentral()
