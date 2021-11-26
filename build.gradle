@@ -1,5 +1,7 @@
+def custom_version = '1.0.0'
+
 group 'com.raise'
-version '1.0.0'
+version "$custom_version"
 
 buildscript {
     ext.kotlin_version = '1.6.0'
@@ -20,6 +22,30 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
 }
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+//.jar主入口
+jar {
+    // 添加应用入口main()的类，注意kotlin class的类拼接方法:"${className}Kt"
+    manifest {
+        attributes 'Main-Class': 'com.raise.test.MainKt'
+    }
+    // 解决kotlin项目编译jar包，执行问题
+    //https://stackoverflow.com/questions/44197521/gradle-project-java-lang-noclassdeffounderror-kotlin-jvm-internal-intrinsics/44202463#44202463
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    // 修改生成的jar包名称
+    archiveName = "text_composition_${this.version}.jar"
+}
+
+//拷贝jar文件到指定目录
+task copyJar(type: Copy) {
+    from jar
+    into "$projectDir/jar/"
+}
+//在jar执行后，执行copyJar任务
+jar.finalizedBy(copyJar)
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
